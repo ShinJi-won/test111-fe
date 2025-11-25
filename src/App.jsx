@@ -11,9 +11,13 @@ function App() {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await axios.post("http://localhost:8000/predict/", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const res = await axios.post(
+      "http://test111-be-2104362049.ap-northeast-2.elb.amazonaws.com/predict/",
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
     setResult(res.data);
   };
 

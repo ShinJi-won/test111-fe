@@ -1,8 +1,8 @@
-name: Deploy React to S3 (dev/prod)
+name: Deploy React to S3
 
 on:
   push:
-    branches: ["dev", "main"]
+    branches: ["main"]
 
 jobs:
   deploy:
@@ -22,18 +22,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # 3. 환경별 변수 매핑
-      - name: Set environment variables based on branch
-        id: env
-        run: |
-          if [[ "${GITHUB_REF##*/}" == "dev" ]]; then
-            echo "ENV=DEV" >> $GITHUB_OUTPUT
-          else
-            echo "ENV=PROD" >> $GITHUB_OUTPUT
-          fi
-
       # 4. 빌드 (환경별 env 값 자동 주입)
       - name: Build React App
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
         run: npm run build
 
       # 5. AWS CREDENTIALS
@@ -47,11 +39,11 @@ jobs:
       # 6. S3 업로드 (환경별 버킷 자동 선택)
       - name: Upload to S3
         run: |
-          BUCKET_NAME="${{ secrets[format('{0}_BUCKET_NAME', steps.env.outputs.ENV)] }}"
+          BUCKET_NAME="${{ secrets.BUCKET_NAME }}"
           aws s3 sync dist/ s3://$BUCKET_NAME --delete
 
       # 7. CloudFront 캐시 무효화 (환경별 분리)
       - name: CloudFront Cache Invalidation
         run: |
-          CF_ID="${{ secrets[format('{0}_CF_DISTRIBUTION_ID', steps.env.outputs.ENV)] }}"
+          CF_ID="${{ secrets.CF_DISTRIBUTION_ID }}"
           aws cloudfront create-invalidation --distribution-id $CF_ID --paths "/*"
